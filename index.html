@@ -1,51 +1,54 @@
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>York: The Afterlife</title>
-    <!-- Leaflet.js CSS for Dark Theme Map -->
+    <!-- Leaflet.js CSS for Interactive Map Layout -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; overflow: hidden; }
-        #app-container { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: #131124; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; display: flex; justify-content: center; align-items: center; }
+        #app-container { display: flex; flex-direction: column; height: 100vh; width: 100%; max-width: 480px; background: #131124; box-shadow: 0 0 25px rgba(0,0,0,0.9); position: relative; }
         #header { background: #1a1636; padding: 15px; text-align: center; border-bottom: 2px solid #3d2f75; font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #bca0ff; text-shadow: 0 0 8px rgba(188,160,255,0.6); }
-        #view-space { flex: 1; position: relative; }
-        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
-        .view-panel.active { display: block; }
-        #map { width: 100%; height: 100%; background: #0d0b18; }
+        #view-space { flex: 1; position: relative; width: 100%; overflow: hidden; background: #0d0b18; }
+        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
+        .view-panel.active { opacity: 1; pointer-events: auto; }
+        #map { width: 100%; height: 100%; background: #0d0b18; z-index: 1; }
         
-        /* Dark map styling overrides */
+        /* Dark map style filters */
         .leaflet-container { background: #0d0b18 !important; }
         .leaflet-tile { filter: invert(100%) hue-rotate(240deg) brightness(60%) contrast(120%); }
         
-        /* Camera View & AR Overlays */
-        #camera-view { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform: scaleX(-1); }
-        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+        /* AR Camera Panel Styles */
+        #camera-view { background: #090714; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; box-sizing: border-box; }
+        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; transform: scaleX(-1); }
+        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; width: 100%; }
         
-        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.5); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
+        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.6); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
         @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
         
-        .ghost-avatar { font-size: 5rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 20px #bca0ff); margin-top: -50px; }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.1); } }
+        .ghost-avatar { font-size: 5rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 20px #bca0ff); margin-top: 20px; z-index: 4; position: relative; }
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-25px) scale(1.1); } }
         
-        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; z-index: 3; }
-        .btn-capture { background: #ff4a73; color: white; border: none; padding: 12px 30px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); pointer-events: auto; }
+        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; z-index: 5; }
+        .btn-capture { background: #ff4a73; color: white; border: none; padding: 14px 35px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); pointer-events: auto; }
         .btn-capture:hover { background: #ff2153; }
         
-        #ghost-info { font-size: 1rem; margin-bottom: 20px; font-weight: bold; color: #bca0ff; background: rgba(13, 11, 24, 0.85); border: 1px solid #3d2f75; padding: 8px 15px; border-radius: 15px; text-align: center; max-width: 80%; }
+        #ghost-info { font-size: 0.95rem; font-weight: bold; color: #bca0ff; background: rgba(13, 11, 24, 0.9); border: 2px solid #3d2f75; padding: 10px 15px; border-radius: 12px; text-align: center; max-width: 80%; z-index: 4; position: relative; white-space: pre-line; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         
-        /* Navigation Navigation Tabs */
-        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; z-index: 10; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; }
-        .tab.active { color: #bca0ff; background: #231d49; border-top: 3px solid #bca0ff; }
+        /* Layout Controls & Tabs */
+        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; z-index: 10; position: relative; width: 100%; }
+        .tab { flex: 1; padding: 16px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; font-size: 0.95rem; border-top: 3px solid transparent; }
+        .tab.active { color: #bca0ff; background: #231d49; border-top-color: #bca0ff; }
         
-        /* Custom Popup Styling */
-        .custom-popup h4 { margin: 0 0 5px 0; color: #1a1636; font-size: 1.1rem; }
-        .custom-popup p { margin: 0 0 10px 0; color: #333; font-size: 0.85rem; line-height: 1.3; }
-        .popup-btn { background: #6246ea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        /* Map Popup Formatting */
+        .custom-popup h4 { margin: 0 0 6px 0; color: #1a1636; font-size: 1.1rem; font-family: sans-serif; }
+        .custom-popup p { margin: 0 0 12px 0; color: #444; font-size: 0.85rem; line-height: 1.4; font-family: sans-serif; }
+        .popup-btn { background: #6246ea; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem; }
+        .popup-btn:hover { background: #4b32c3; }
     </style>
 </head>
 <body>
@@ -54,7 +57,7 @@
     <div id="header">YORK: THE AFTERLIFE</div>
     
     <div id="view-space">
-        <!-- MAP PANEL -->
+        <!-- GHOST MAP PANEL -->
         <div id="map-panel" class="view-panel active">
             <div id="map"></div>
         </div>
@@ -64,7 +67,7 @@
             <video id="webcam" autoplay playsinline muted></video>
             <div class="ar-overlay">
                 <div class="radar-line"></div>
-                <div id="ghost-info">Scanning local dimensions...</div>
+                <div id="ghost-info">System ready. Select a hotspot on your map tracking grid.</div>
                 <div id="ghost-target" class="ghost-avatar" style="display: none;">👻</div>
             </div>
             <div id="camera-ui">
@@ -79,77 +82,51 @@
     </div>
 </div>
 
-<!-- Leaflet.js Script -->
+<!-- Leaflet.js Mapping Library Engine -->
 <script src="https://unpkg.com"></script>
 <script>
-    // Initialize Map Centered on Haunted York
-    const map = L.map('map').setView([53.9591, -1.0815], 15);
-    let userMarker = null;
+    // Global App States Setup
+    let map = null;
     let videoStream = null;
     let activeGhost = null;
 
-    // Load Free Dark-Friendly OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    // Initialize Map Framework Safely on Page Ready
+    window.addEventListener('DOMContentLoaded', () => {
+        map = L.map('map').setView([53.9591, -1.0815], 14);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-    // Real Haunted York Location Data & Lore
-    const hauntings = [
-        { 
-            name: "The Treasurer's House", 
-            coords: [53.9625, -1.0820], 
-            ghost: "The Roman Legionnaire",
-            story: "In 1953, an apprentice plumber working in the cellar famously witnessed a cart horse and a whole legion of tired Roman soldiers marching straight through the solid brick walls."
-        },
-        { 
-            name: "The Shambles Alleys", 
-            coords: [53.9593, -1.0802], 
-            ghost: "The Plagued Weaver",
-            story: "A heavily cloaked figure is frequently seen pacing down these medieval timber paths, accompanied by the strong, chilling scent of old wood smoke and damp rot."
-        },
-        { 
-            name: "Holy Trinity Church", 
-            coords: [53.9575, -1.0835], 
-            ghost: "Marmaduke Buckle",
-            story: "The tragic spirit of Marmaduke Buckle, a disabled man accused of witchcraft who took his own life here in 1715, is known to flick lights and carve his initials into old beams."
-        }
-    ];
+        // Load complete database of 6 real historic York legends
+        const locations = [
+            { name: "Treasurer's House", coords: [53.9625, -1.0820], ghost: "The Roman Legionnaire", story: "Plumber Harry Martindale famously saw a troop of tired Roman soldiers march right out of the cellar walls here." },
+            { name: "The Shambles", coords: [53.9593, -1.0802], ghost: "The Plagued Weaver", story: "A dark cloaked figure patrols these ancient timber frame snickelways, leaving a chill smell of woodsmoke." },
+            { name: "Holy Trinity Church", coords: [53.9575, -1.0835], ghost: "Marmaduke Buckle", story: "The sad spirit of a local man who took his life in 1715 is known to rattle the doors and doors blocks here." },
+            { name: "The Golden Fleece Pub", coords: [53.9584, -1.0806], ghost: "The Crying Child", story: "York's most haunted tavern. Guests frequently hear phantom running footsteps and quiet disembodied weeping." },
+            { name: "Theatre Royal", coords: [53.9616, -1.0841], ghost: "The Grey Lady Nun", story: "The sad spirit of a bricked-up medieval nun sits quietly in the dress circle. Sightings mean good luck!" },
+            { name: "Dringhouses Road", coords: [53.9425, -1.1120], ghost: "Headless Highwayman", story: "Eerie sightings of an executed phantom highwayman riding his dark horse silently along the old approach roads." }
+        ];
 
-    // Add Haunted Markers onto the Map
-    hauntings.forEach(loc => {
-        const marker = L.marker(loc.coords).addTo(map);
-        const popupContent = `
-            <div class="custom-popup">
-                <h4>${loc.name}</h4>
-                <p>${loc.story}</p>
-                <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Track Spectre</button>
-            </div>
-        `;
-        marker.bindPopup(popupContent);
+        // Draw Interactive Checkpoints onto Grid
+        locations.forEach(loc => {
+            const marker = L.marker(loc.coords).addTo(map);
+            const popupContent = `
+                <div class="custom-popup">
+                    <h4>${loc.name}</h4>
+                    <p>${loc.story}</p>
+                    <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Track Spectre</button>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+        });
+
+        // Start internal layout refresh
+        setTimeout(() => { map.invalidateSize(); }, 300);
     });
 
-    // Request and Track Live Mobile GPS Coordinates
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            if (!userMarker) {
-                // Style custom glowing blue circle for user indicator
-                const userIcon = L.divIcon({
-                    className: 'user-location-dot',
-                    html: '<div style="background:#00bfff; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #00bfff;"></div>',
-                    iconSize: [12, 12]
-                });
-                userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-            } else {
-                userMarker.setLatLng([lat, lng]);
-            }
-        }, err => console.log("GPS access denied or unavailable."), { enableHighAccuracy: true });
-    }
-
-    // Camera Hardware Access Management
+    // Device Webcam Signal Controls
     async function startCamera() {
         const video = document.getElementById('webcam');
         try {
@@ -159,636 +136,37 @@
             });
             video.srcObject = videoStream;
         } catch (err) {
-            console.log("Camera access blocked. Using atmospheric emulator mode.");
-            document.getElementById('camera-view').style.background = "#090714";
+            console.log("Webcam access declined or unavailable on current device.");
+            document.getElementById('camera-view').style.background = "#0c0a18";
         }
     }
 
     function stopCamera() {
         if (videoStream) {
             videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
         }
     }
 
-    // Screen Panel Navigation Layout Handler
+    // Handle Clean Interface View Panels Toggling
     function switchView(view) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         
-        if(view === 'map') {
+        if (view === 'map') {
             stopCamera();
             document.getElementById('map-panel').classList.add('active');
             document.getElementById('tab-map').classList.add('active');
-            setTimeout(() => { map.invalidateSize(); }, 200);
+            if (map) { setTimeout(() => { map.invalidateSize(); }, 50); }
         } else {
             document.getElementById('camera-view').classList.add('active');
             document.getElementById('tab-cam').classList.add('active');
             startCamera();
             
-            if(activeGhost) {
-                document.getElementById('ghost-info').innerText = `⚠️ SPECTRAL FREQUENCY DETECTED:\n${activeGhost}`;
+            if (activeGhost) {
+                document.getElementById('ghost-info').innerText = `⚠️ SPECTRAL SIGNAL DETECTED:\n${activeGhost}`;
                 document.getElementById('ghost-target').style.display = "block";
             } else {
-                document.getElementById('ghost-info').innerText = "No active spectral signals nearby. Explore York Map checkpoints.";
-                document.getElementById('ghost-target').style.display = "none";
-            }
-        }
-    }
-
-    // Trigger Hunt Shift via Map Windows<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>York: The Afterlife</title>
-    <!-- Leaflet.js CSS for Dark Theme Map -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; overflow: hidden; }
-        #app-container { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: #131124; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; }
-        #header { background: #1a1636; padding: 15px; text-align: center; border-bottom: 2px solid #3d2f75; font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #bca0ff; text-shadow: 0 0 8px rgba(188,160,255,0.6); }
-        #view-space { flex: 1; position: relative; }
-        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
-        .view-panel.active { display: block; }
-        #map { width: 100%; height: 100%; background: #0d0b18; }
-        
-        /* Dark map styling overrides */
-        .leaflet-container { background: #0d0b18 !important; }
-        .leaflet-tile { filter: invert(100%) hue-rotate(240deg) brightness(60%) contrast(120%); }
-        
-        /* Camera View & AR Overlays */
-        #camera-view { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform: scaleX(-1); }
-        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        
-        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.5); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
-        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        
-        .ghost-avatar { font-size: 5rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 20px #bca0ff); margin-top: -50px; }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.1); } }
-        
-        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; z-index: 3; }
-        .btn-capture { background: #ff4a73; color: white; border: none; padding: 12px 30px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); pointer-events: auto; }
-        .btn-capture:hover { background: #ff2153; }
-        
-        #ghost-info { font-size: 1rem; margin-bottom: 20px; font-weight: bold; color: #bca0ff; background: rgba(13, 11, 24, 0.85); border: 1px solid #3d2f75; padding: 8px 15px; border-radius: 15px; text-align: center; max-width: 80%; }
-        
-        /* Navigation Navigation Tabs */
-        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; z-index: 10; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; }
-        .tab.active { color: #bca0ff; background: #231d49; border-top: 3px solid #bca0ff; }
-        
-        /* Custom Popup Styling */
-        .custom-popup h4 { margin: 0 0 5px 0; color: #1a1636; font-size: 1.1rem; }
-        .custom-popup p { margin: 0 0 10px 0; color: #333; font-size: 0.85rem; line-height: 1.3; }
-        .popup-btn { background: #6246ea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    </style>
-</head>
-<body>
-
-<div id="app-container">
-    <div id="header">YORK: THE AFTERLIFE</div>
-    
-    <div id="view-space">
-        <!-- MAP PANEL -->
-        <div id="map-panel" class="view-panel active">
-            <div id="map"></div>
-        </div>
-        
-        <!-- AR CAMERA PANEL -->
-        <div id="camera-view" class="view-panel">
-            <video id="webcam" autoplay playsinline muted></video>
-            <div class="ar-overlay">
-                <div class="radar-line"></div>
-                <div id="ghost-info">Scanning local dimensions...</div>
-                <div id="ghost-target" class="ghost-avatar" style="display: none;">👻</div>
-            </div>
-            <div id="camera-ui">
-                <button class="btn-capture" onclick="captureGhost()">BUST GHOST</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="nav-tabs">
-        <div id="tab-map" class="tab active" onclick="switchView('map')">🗺️ GHOST MAP</div>
-        <div id="tab-cam" class="tab" onclick="switchView('cam')">📷 AR TRACKER</div>
-    </div>
-</div>
-
-<!-- Leaflet.js Script -->
-<script src="https://unpkg.com"></script>
-<script>
-    // Initialize Map Centered on Haunted York
-    const map = L.map('map').setView([53.9591, -1.0815], 15);
-    let userMarker = null;
-    let videoStream = null;
-    let activeGhost = null;
-
-    // Load Free Dark-Friendly OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Real Haunted York Location Data & Lore
-    const hauntings = [
-        { 
-            name: "The Treasurer's House", 
-            coords: [53.9625, -1.0820], 
-            ghost: "The Roman Legionnaire",
-            story: "In 1953, an apprentice plumber working in the cellar famously witnessed a cart horse and a whole legion of tired Roman soldiers marching straight through the solid brick walls."
-        },
-        { 
-            name: "The Shambles Alleys", 
-            coords: [53.9593, -1.0802], 
-            ghost: "The Plagued Weaver",
-            story: "A heavily cloaked figure is frequently seen pacing down these medieval timber paths, accompanied by the strong, chilling scent of old wood smoke and damp rot."
-        },
-        { 
-            name: "Holy Trinity Church", 
-            coords: [53.9575, -1.0835], 
-            ghost: "Marmaduke Buckle",
-            story: "The tragic spirit of Marmaduke Buckle, a disabled man accused of witchcraft who took his own life here in 1715, is known to flick lights and carve his initials into old beams."
-        }
-    ];
-
-    // Add Haunted Markers onto the Map
-    hauntings.forEach(loc => {
-        const marker = L.marker(loc.coords).addTo(map);
-        const popupContent = `
-            <div class="custom-popup">
-                <h4>${loc.name}</h4>
-                <p>${loc.story}</p>
-                <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Track Spectre</button>
-            </div>
-        `;
-        marker.bindPopup(popupContent);
-    });
-
-    // Request and Track Live Mobile GPS Coordinates
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            if (!userMarker) {
-                // Style custom glowing blue circle for user indicator
-                const userIcon = L.divIcon({
-                    className: 'user-location-dot',
-                    html: '<div style="background:#00bfff; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #00bfff;"></div>',
-                    iconSize: [12, 12]
-                });
-                userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-            } else {
-                userMarker.setLatLng([lat, lng]);
-            }
-        }, err => console.log("GPS access denied or unavailable."), { enableHighAccuracy: true });
-    }
-
-    // Camera Hardware Access Management
-    async function startCamera() {
-        const video = document.getElementById('webcam');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" }, 
-                audio: false 
-            });
-            video.srcObject = videoStream;
-        } catch (err) {
-            console.log("Camera access blocked. Using atmospheric emulator mode.");
-            document.getElementById('camera-view').style.background = "#090714";
-        }
-    }
-
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    // Screen Panel Navigation Layout Handler
-    function switchView(view) {
-        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        
-        if(view === 'map') {
-            stopCamera();
-            document.getElementById('map-panel').classList.add('active');
-            document.getElementById('tab-map').classList.add('active');
-            setTimeout(() => { map.invalidateSize(); }, 200);
-        } else {
-            document.getElementById('camera-view').classList.add('active');
-            document.getElementById('tab-cam').classList.add('active');
-            startCamera();
-            
-            if(activeGhost) {
-                document.getElementById('ghost-info').innerText = `⚠️ SPECTRAL FREQUENCY DETECTED:\n${activeGhost}`;
-                document.getElementById('ghost-target').style.display = "block";
-            } else {
-                document.getElementById('ghost-info').innerText = "No active spectral signals nearby. Explore York Map checkpoints.";
-                document.getElementById('ghost-target').style.display = "none";
-            }
-        }
-    }
-
-    // Trigger Hunt Shift via Map Windows
-
-
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>York: The Afterlife</title>
-    <!-- Leaflet.js CSS for Dark Theme Map -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; overflow: hidden; }
-        #app-container { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: #131124; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; }
-        #header { background: #1a1636; padding: 15px; text-align: center; border-bottom: 2px solid #3d2f75; font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #bca0ff; text-shadow: 0 0 8px rgba(188,160,255,0.6); }
-        #view-space { flex: 1; position: relative; }
-        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
-        .view-panel.active { display: block; }
-        #map { width: 100%; height: 100%; background: #0d0b18; }
-        
-        /* Dark map styling overrides */
-        .leaflet-container { background: #0d0b18 !important; }
-        .leaflet-tile { filter: invert(100%) hue-rotate(240deg) brightness(60%) contrast(120%); }
-        
-        /* Camera View & AR Overlays */
-        #camera-view { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform: scaleX(-1); }
-        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        
-        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.5); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
-        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        
-        .ghost-avatar { font-size: 5rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 20px #bca0ff); margin-top: -50px; }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.1); } }
-        
-        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; z-index: 3; }
-        .btn-capture { background: #ff4a73; color: white; border: none; padding: 12px 30px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); pointer-events: auto; }
-        .btn-capture:hover { background: #ff2153; }
-        
-        #ghost-info { font-size: 1rem; margin-bottom: 20px; font-weight: bold; color: #bca0ff; background: rgba(13, 11, 24, 0.85); border: 1px solid #3d2f75; padding: 8px 15px; border-radius: 15px; text-align: center; max-width: 80%; }
-        
-        /* Navigation Navigation Tabs */
-        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; z-index: 10; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; }
-        .tab.active { color: #bca0ff; background: #231d49; border-top: 3px solid #bca0ff; }
-        
-        /* Custom Popup Styling */
-        .custom-popup h4 { margin: 0 0 5px 0; color: #1a1636; font-size: 1.1rem; }
-        .custom-popup p { margin: 0 0 10px 0; color: #333; font-size: 0.85rem; line-height: 1.3; }
-        .popup-btn { background: #6246ea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    </style>
-</head>
-<body>
-
-<div id="app-container">
-    <div id="header">YORK: THE AFTERLIFE</div>
-    
-    <div id="view-space">
-        <!-- MAP PANEL -->
-        <div id="map-panel" class="view-panel active">
-            <div id="map"></div>
-        </div>
-        
-        <!-- AR CAMERA PANEL -->
-        <div id="camera-view" class="view-panel">
-            <video id="webcam" autoplay playsinline muted></video>
-            <div class="ar-overlay">
-                <div class="radar-line"></div>
-                <div id="ghost-info">Scanning local dimensions...</div>
-                <div id="ghost-target" class="ghost-avatar" style="display: none;">👻</div>
-            </div>
-            <div id="camera-ui">
-                <button class="btn-capture" onclick="captureGhost()">BUST GHOST</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="nav-tabs">
-        <div id="tab-map" class="tab active" onclick="switchView('map')">🗺️ GHOST MAP</div>
-        <div id="tab-cam" class="tab" onclick="switchView('cam')">📷 AR TRACKER</div>
-    </div>
-</div>
-
-<!-- Leaflet.js Script -->
-<script src="https://unpkg.com"></script>
-<script>
-    // Initialize Map Centered on Haunted York
-    const map = L.map('map').setView([53.9591, -1.0815], 15);
-    let userMarker = null;
-    let videoStream = null;
-    let activeGhost = null;
-
-    // Load Free Dark-Friendly OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Real Haunted York Location Data & Lore
-    const hauntings = [
-        { 
-            name: "The Treasurer's House", 
-            coords: [53.9625, -1.0820], 
-            ghost: "The Roman Legionnaire",
-            story: "In 1953, an apprentice plumber working in the cellar famously witnessed a cart horse and a whole legion of tired Roman soldiers marching straight through the solid brick walls."
-        },
-        { 
-            name: "The Shambles Alleys", 
-            coords: [53.9593, -1.0802], 
-            ghost: "The Plagued Weaver",
-            story: "A heavily cloaked figure is frequently seen pacing down these medieval timber paths, accompanied by the strong, chilling scent of old wood smoke and damp rot."
-        },
-        { 
-            name: "Holy Trinity Church", 
-            coords: [53.9575, -1.0835], 
-            ghost: "Marmaduke Buckle",
-            story: "The tragic spirit of Marmaduke Buckle, a disabled man accused of witchcraft who took his own life here in 1715, is known to flick lights and carve his initials into old beams."
-        }
-    ];
-
-    // Add Haunted Markers onto the Map
-    hauntings.forEach(loc => {
-        const marker = L.marker(loc.coords).addTo(map);
-        const popupContent = `
-            <div class="custom-popup">
-                <h4>${loc.name}</h4>
-                <p>${loc.story}</p>
-                <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Track Spectre</button>
-            </div>
-        `;
-        marker.bindPopup(popupContent);
-    });
-
-    // Request and Track Live Mobile GPS Coordinates
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            if (!userMarker) {
-                // Style custom glowing blue circle for user indicator
-                const userIcon = L.divIcon({
-                    className: 'user-location-dot',
-                    html: '<div style="background:#00bfff; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #00bfff;"></div>',
-                    iconSize: [12, 12]
-                });
-                userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-            } else {
-                userMarker.setLatLng([lat, lng]);
-            }
-        }, err => console.log("GPS access denied or unavailable."), { enableHighAccuracy: true });
-    }
-
-    // Camera Hardware Access Management
-    async function startCamera() {
-        const video = document.getElementById('webcam');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" }, 
-                audio: false 
-            });
-            video.srcObject = videoStream;
-        } catch (err) {
-            console.log("Camera access blocked. Using atmospheric emulator mode.");
-            document.getElementById('camera-view').style.background = "#090714";
-        }
-    }
-
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    // Screen Panel Navigation Layout Handler
-    function switchView(view) {
-        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        
-        if(view === 'map') {
-            stopCamera();
-            document.getElementById('map-panel').classList.add('active');
-            document.getElementById('tab-map').classList.add('active');
-            setTimeout(() => { map.invalidateSize(); }, 200);
-        } else {
-            document.getElementById('camera-view').classList.add('active');
-            document.getElementById('tab-cam').classList.add('active');
-            startCamera();
-            
-            if(activeGhost) {
-                document.getElementById('ghost-info').innerText = `⚠️ SPECTRAL FREQUENCY DETECTED:\n${activeGhost}`;
-                document.getElementById('ghost-target').style.display = "block";
-            } else {
-                document.getElementById('ghost-info').innerText = "No active spectral signals nearby. Explore York Map checkpoints.";
-                document.getElementById('ghost-target').style.display = "none";
-            }
-        }
-    }
-
-    // Trigger Hunt Shift via Map Windows
-    <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>York: The Afterlife</title>
-    <!-- Leaflet.js CSS for Dark Theme Map -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; overflow: hidden; }
-        #app-container { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: #131124; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; }
-        #header { background: #1a1636; padding: 15px; text-align: center; border-bottom: 2px solid #3d2f75; font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #bca0ff; text-shadow: 0 0 8px rgba(188,160,255,0.6); }
-        #view-space { flex: 1; position: relative; }
-        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
-        .view-panel.active { display: block; }
-        #map { width: 100%; height: 100%; background: #0d0b18; }
-        
-        /* Dark map styling overrides */
-        .leaflet-container { background: #0d0b18 !important; }
-        .leaflet-tile { filter: invert(100%) hue-rotate(240deg) brightness(60%) contrast(120%); }
-        
-        /* Camera View & AR Overlays */
-        #camera-view { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform: scaleX(-1); }
-        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        
-        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.5); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
-        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-        
-        .ghost-avatar { font-size: 5rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 20px #bca0ff); margin-top: -50px; }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.1); } }
-        
-        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; z-index: 3; }
-        .btn-capture { background: #ff4a73; color: white; border: none; padding: 12px 30px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); pointer-events: auto; }
-        .btn-capture:hover { background: #ff2153; }
-        
-        #ghost-info { font-size: 1rem; margin-bottom: 20px; font-weight: bold; color: #bca0ff; background: rgba(13, 11, 24, 0.85); border: 1px solid #3d2f75; padding: 8px 15px; border-radius: 15px; text-align: center; max-width: 80%; }
-        
-        /* Navigation Navigation Tabs */
-        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; z-index: 10; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; }
-        .tab.active { color: #bca0ff; background: #231d49; border-top: 3px solid #bca0ff; }
-        
-        /* Custom Popup Styling */
-        .custom-popup h4 { margin: 0 0 5px 0; color: #1a1636; font-size: 1.1rem; }
-        .custom-popup p { margin: 0 0 10px 0; color: #333; font-size: 0.85rem; line-height: 1.3; }
-        .popup-btn { background: #6246ea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-    </style>
-</head>
-<body>
-
-<div id="app-container">
-    <div id="header">YORK: THE AFTERLIFE</div>
-    
-    <div id="view-space">
-        <!-- MAP PANEL -->
-        <div id="map-panel" class="view-panel active">
-            <div id="map"></div>
-        </div>
-        
-        <!-- AR CAMERA PANEL -->
-        <div id="camera-view" class="view-panel">
-            <video id="webcam" autoplay playsinline muted></video>
-            <div class="ar-overlay">
-                <div class="radar-line"></div>
-                <div id="ghost-info">Scanning local dimensions...</div>
-                <div id="ghost-target" class="ghost-avatar" style="display: none;">👻</div>
-            </div>
-            <div id="camera-ui">
-                <button class="btn-capture" onclick="captureGhost()">BUST GHOST</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="nav-tabs">
-        <div id="tab-map" class="tab active" onclick="switchView('map')">🗺️ GHOST MAP</div>
-        <div id="tab-cam" class="tab" onclick="switchView('cam')">📷 AR TRACKER</div>
-    </div>
-</div>
-
-<!-- Leaflet.js Script -->
-<script src="https://unpkg.com"></script>
-<script>
-    // Initialize Map Centered on Haunted York
-    const map = L.map('map').setView([53.9591, -1.0815], 15);
-    let userMarker = null;
-    let videoStream = null;
-    let activeGhost = null;
-
-    // Load Free Dark-Friendly OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // Real Haunted York Location Data & Lore
-    const hauntings = [
-        { 
-            name: "The Treasurer's House", 
-            coords: [53.9625, -1.0820], 
-            ghost: "The Roman Legionnaire",
-            story: "In 1953, an apprentice plumber working in the cellar famously witnessed a cart horse and a whole legion of tired Roman soldiers marching straight through the solid brick walls."
-        },
-        { 
-            name: "The Shambles Alleys", 
-            coords: [53.9593, -1.0802], 
-            ghost: "The Plagued Weaver",
-            story: "A heavily cloaked figure is frequently seen pacing down these medieval timber paths, accompanied by the strong, chilling scent of old wood smoke and damp rot."
-        },
-        { 
-            name: "Holy Trinity Church", 
-            coords: [53.9575, -1.0835], 
-            ghost: "Marmaduke Buckle",
-            story: "The tragic spirit of Marmaduke Buckle, a disabled man accused of witchcraft who took his own life here in 1715, is known to flick lights and carve his initials into old beams."
-        }
-    ];
-
-    // Add Haunted Markers onto the Map
-    hauntings.forEach(loc => {
-        const marker = L.marker(loc.coords).addTo(map);
-        const popupContent = `
-            <div class="custom-popup">
-                <h4>${loc.name}</h4>
-                <p>${loc.story}</p>
-                <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Track Spectre</button>
-            </div>
-        `;
-        marker.bindPopup(popupContent);
-    });
-
-    // Request and Track Live Mobile GPS Coordinates
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            if (!userMarker) {
-                // Style custom glowing blue circle for user indicator
-                const userIcon = L.divIcon({
-                    className: 'user-location-dot',
-                    html: '<div style="background:#00bfff; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #00bfff;"></div>',
-                    iconSize: [12, 12]
-                });
-                userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-            } else {
-                userMarker.setLatLng([lat, lng]);
-            }
-        }, err => console.log("GPS access denied or unavailable."), { enableHighAccuracy: true });
-    }
-
-    // Camera Hardware Access Management
-    async function startCamera() {
-        const video = document.getElementById('webcam');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" }, 
-                audio: false 
-            });
-            video.srcObject = videoStream;
-        } catch (err) {
-            console.log("Camera access blocked. Using atmospheric emulator mode.");
-            document.getElementById('camera-view').style.background = "#090714";
-        }
-    }
-
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    // Screen Panel Navigation Layout Handler
-    function switchView(view) {
-        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        
-        if(view === 'map') {
-            stopCamera();
-            document.getElementById('map-panel').classList.add('active');
-            document.getElementById('tab-map').classList.add('active');
-            setTimeout(() => { map.invalidateSize(); }, 200);
-        } else {
-            document.getElementById('camera-view').classList.add('active');
-            document.getElementById('tab-cam').classList.add('active');
-            startCamera();
-            
-            if(activeGhost) {
-                document.getElementById('ghost-info').innerText = `⚠️ SPECTRAL FREQUENCY DETECTED:\n${activeGhost}`;
-                document.getElementById('ghost-target').style.display = "block";
-            } else {
-                document.getElementById('ghost-info').innerText = "No active spectral signals nearby. Explore York Map checkpoints.";
-                document.getElementById('ghost-target').style.display = "none";
-            }
-        }
-    }
-
-    // Trigger Hunt Shift via Map Windows
-
 
 
 
