@@ -1,1 +1,139 @@
 
+# york-the-afterlife<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>York: The Afterlife</title>
+    <!-- Leaflet.js CSS for Dark Theme Map -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d0b18; color: #fff; overflow: hidden; }
+        #app-container { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: #131124; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; }
+        #header { background: #1a1636; padding: 15px; text-align: center; border-bottom: 2px solid #3d2f75; font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #bca0ff; text-shadow: 0 0 8px rgba(188,160,255,0.6); }
+        #view-space { flex: 1; position: relative; }
+        .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        .view-panel.active { display: block; }
+        #map { width: 100%; height: 100%; background: #0d0b18; }
+        /* Dark map overrides */
+        .leaflet-container { background: #0d0b18 !important; }
+        .leaflet-tile { filter: invert(100%) hue-rotate(240deg) brightness(60%) contrast(120%); }
+        #camera-view { background: #05040a; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .radar-line { position: absolute; width: 100%; height: 4px; background: rgba(188,160,255,0.4); box-shadow: 0 0 15px #bca0ff; animation: scan 3s infinite linear; top: 0; }
+        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .ghost-avatar { width: 180px; height: 180px; background: radial-gradient(circle, rgba(188,160,255,0.6) 0%, rgba(188,160,255,0) 70%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 4rem; animation: float 4s infinite ease-in-out; filter: drop-shadow(0 0 15px #bca0ff); }
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
+        #camera-ui { position: absolute; bottom: 30px; text-align: center; width: 100%; }
+        .btn-capture { background: #ff4a73; color: white; border: none; padding: 12px 30px; font-weight: bold; border-radius: 25px; font-size: 1rem; cursor: pointer; box-shadow: 0 0 15px rgba(255, 74, 115, 0.5); transition: 0.2s; }
+        .btn-capture:hover { background: #ff2153; transform: scale(1.05); }
+        #ghost-info { font-size: 1.1rem; margin-bottom: 20px; font-weight: bold; color: #bca0ff; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 15px; display: inline-block; }
+        #nav-tabs { display: flex; background: #1a1636; border-top: 2px solid #3d2f75; }
+        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: bold; color: #8278af; transition: 0.3s; }
+        .tab.active { color: #bca0ff; background: #231d49; border-top: 3px solid #bca0ff; }
+        .custom-popup { background: #1a1636; color: #fff; border: 1px solid #3d2f75; border-radius: 8px; padding: 5px; }
+        .popup-btn { background: #6246ea; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="header">YORK: THE AFTERLIFE</div>
+    
+    <div id="view-space">
+        <!-- MAP PANEL -->
+        <div id="map-panel" class="view-panel active">
+            <div id="map"></div>
+        </div>
+        
+        <!-- CAMERA PANEL -->
+        <div id="camera-view" class="view-panel">
+            <div class="radar-line"></div>
+            <div id="ghost-info">Scanning vicinity...</div>
+            <div class="ghost-avatar">👻</div>
+            <div id="camera-ui">
+                <button class="btn-capture" onclick="captureGhost()">BUST GHOST</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="nav-tabs">
+        <div id="tab-map" class="tab active" onclick="switchView('map')">🗺️ GHOST MAP</div>
+        <div id="tab-cam" class="tab" onclick="switchView('cam')">📷 AR TRACKER</div>
+    </div>
+</div>
+
+<!-- Leaflet.js Script -->
+<script src="https://unpkg.com"></script>
+<script>
+    // Initialize Map Centered on Haunted York
+    const map = L.map('map').setView([53.9591, -1.0815], 15);
+    
+    // Load Free OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Haunted Location Data
+    const hauntings = [
+        { name: "The Shambles", coords: [53.9593, -1.0802], ghost: "The Plagued Weaver" },
+        { name: "Clifford's Tower", coords: [53.9558, -1.0783], ghost: "The Shadow Guardian" },
+        { name: "Treasurer's House", coords: [53.9625, -1.0820], ghost: "The Roman Legionnaire" }
+    ];
+
+    let activeGhost = "";
+
+    // Add Markers to Map
+    hauntings.forEach(loc => {
+        const marker = L.marker(loc.coords).addTo(map);
+        const popupContent = `
+            <div style="color:#000;">
+                <h4 style="margin:0 0 5px 0;">${loc.name}</h4>
+                <p style="margin:0; font-size:0.85rem;">Eerie structural activity reported here.</p>
+                <button class="popup-btn" onclick="startHunt('${loc.ghost}')">Scan for Ghost</button>
+            </div>
+        `;
+        marker.bindPopup(popupContent);
+    });
+
+    // Handle View Switching
+    function switchView(view) {
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        
+        if(view === 'map') {
+            document.getElementById('map-panel').classList.add('active');
+            document.getElementById('tab-map').classList.add('active');
+            // Force leaflet layout refresh
+            setTimeout(() => { map.invalidateSize(); }, 200);
+        } else {
+            document.getElementById('camera-view').classList.add('active');
+            document.getElementById('tab-cam').classList.add('active');
+            if(!activeGhost) {
+                document.getElementById('ghost-info').innerText = "No active spectral signals nearby.";
+            }
+        }
+    }
+
+    // Trigger Hunt from Map Pin
+    function startHunt(ghostName) {
+        activeGhost = ghostName;
+        document.getElementById('ghost-info').innerText = `⚠️ SIGNAL DETECTED: ${ghostName}`;
+        switchView('cam');
+    }
+
+    // Interactive Action
+    function captureGhost() {
+        if(!activeGhost) {
+            alert("Nothing to capture yet! Explore the map to track a spectral signal.");
+            return;
+        }
+        alert(`🎯 Success! You successfully captured: ${activeGhost}!`);
+        activeGhost = "";
+        document.getElementById('ghost-info').innerText = "Area Cleared. Return to map.";
+        switchView('map');
+    }
+</script>
+</body>
+</html>
+
